@@ -1,0 +1,31 @@
+version: '3'
+services:
+  mqnamesrv:
+    image: apache/rocketmq:4.9.4
+    ports:
+      - "9876:9876"
+    command: sh mqnamesrv
+
+
+  broker:
+    image: apache/rocketmq:4.9.4
+    env_file: .env
+    ports:
+      - "10909:10909"
+      - "10911:10911"
+      - "10912:10912"
+    command: sh mqbroker -n mqnamesrv:9876 autoCreateTopicEnable=true -c /home/rocketmq/conf/broker.conf
+    volumes:
+    - ./conf/broker.conf:/home/rocketmq/conf/broker.conf
+
+  rocketconsole:
+    image: apacherocketmq/rocketmq-dashboard:latest
+    ports:
+      - "18082:8080"
+    environment:
+      JAVA_OPTS: -Drocketmq.namesrv.addr=mqnamesrv:9876 -Dcom.rocketmq.sendMessageWithVIPChannel=false
+      TZ: "Asia/Shanghai"
+
+networks:
+  sc-net:
+    driver: host
