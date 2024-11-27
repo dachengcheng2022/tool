@@ -24,4 +24,7 @@ sudo chmod +x /usr/local/bin/docker-compose
 sudo ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
 #4
 docker-compose --version
+#5
+cp /usr/share/zoneinfo/Asia/Shanghai  /etc/localtime
+date
 
