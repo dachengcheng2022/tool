@@ -1,9 +1,8 @@
 #!/bin/bash
 #1
 apt-get update
-apt-get remove docker docker-engine docker.io containerd runc -y
-
 echo "\$nrconf{restart} = 'a'" >> /etc/needrestart/needrestart.conf
+apt-get remove docker docker-engine docker.io containerd runc -y
 
 apt-get install ca-certificates curl gnupg lsb-release -y
 #2
