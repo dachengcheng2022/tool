@@ -4,7 +4,7 @@ apt-get update
 echo "\$nrconf{restart} = 'a'" >> /etc/needrestart/needrestart.conf
 apt-get remove docker docker-engine docker.io containerd runc -y
 
-apt-get install ca-certificates curl gnupg lsb-release lrzsz -y
+apt-get install ca-certificates curl gnupg lsb-release lrzsz unzip -y
 #2
 curl -fsSL http://mirrors.aliyun.com/docker-ce/linux/ubuntu/gpg | sudo apt-key add -
 #3
