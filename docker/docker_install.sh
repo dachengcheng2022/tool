@@ -26,6 +26,7 @@ fi
 export DEBIAN_FRONTEND=noninteractive
 APT_SOURCES_LIST=${APT_SOURCES_LIST:-/etc/apt/sources.list}
 APT_SOURCES_DIR=${APT_SOURCES_DIR:-/etc/apt/sources.list.d}
+APT_GET=(apt-get -o DPkg::Lock::Timeout=300)
 
 remove_legacy_aliyun_docker_sources() {
     local source_file
@@ -65,13 +66,13 @@ printf '清理旧的阿里云 Docker APT 源...\n'
 remove_legacy_aliyun_docker_sources
 
 printf '更新系统软件索引...\n'
-apt-get update
+"${APT_GET[@]}" update
 
 printf '移除可能冲突的软件包...\n'
-apt-get remove -y docker.io docker-compose docker-compose-v2 podman-docker containerd runc
+"${APT_GET[@]}" remove -y docker.io docker-compose docker-compose-v2 podman-docker containerd runc
 
 printf '安装仓库依赖...\n'
-apt-get install -y ca-certificates curl
+"${APT_GET[@]}" install -y ca-certificates curl
 
 printf '配置 Docker 官方 APT 仓库...\n'
 install -m 0755 -d /etc/apt/keyrings
@@ -84,10 +85,10 @@ printf '%s\n' \
     "deb [arch=${architecture} signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu ${VERSION_CODENAME} stable" \
     | tee "$APT_SOURCES_DIR/docker.list" >/dev/null
 
-apt-get update
+"${APT_GET[@]}" update
 
 printf '安装 Docker Engine、Buildx 和 Compose Plugin...\n'
-apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+"${APT_GET[@]}" install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
 printf '启用并启动 Docker 服务...\n'
 systemctl enable --now docker

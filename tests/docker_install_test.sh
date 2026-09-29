@@ -61,7 +61,7 @@ test_stops_when_apt_update_fails() {
     cat > "$FAKE_BIN/apt-get" <<'STUB'
 #!/usr/bin/env bash
 printf 'apt-get %s\n' "$*" >> "$COMMAND_LOG"
-if [[ "${1:-}" == "update" ]]; then
+if [[ " $* " == *" update "* ]]; then
     exit 42
 fi
 exit 0
@@ -94,7 +94,7 @@ test_installs_from_official_repository_with_compose_plugin() {
         ID=ubuntu VERSION_CODENAME=noble bash "$SCRIPT" >/dev/null 2>&1
 
     assert_log_contains 'curl -fsSL https://download.docker.com/linux/ubuntu/gpg'
-    assert_log_contains 'apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin'
+    assert_log_contains 'apt-get -o DPkg::Lock::Timeout=300 install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin'
     assert_log_contains 'systemctl enable --now docker'
     assert_log_contains 'docker compose version'
 }
@@ -114,7 +114,7 @@ test_removes_legacy_aliyun_source_before_first_update() {
     cat > "$FAKE_BIN/apt-get" <<'STUB'
 #!/usr/bin/env bash
 printf 'apt-get %s\n' "$*" >> "$COMMAND_LOG"
-if [[ "${1:-}" == "update" ]] && grep -RqsF 'mirrors.aliyun.com/docker-ce/linux/ubuntu' \
+if [[ " $* " == *" update "* ]] && grep -RqsF 'mirrors.aliyun.com/docker-ce/linux/ubuntu' \
     "$APT_SOURCES_LIST" "$APT_SOURCES_DIR"; then
     exit 73
 fi
@@ -131,10 +131,26 @@ STUB
         printf 'Legacy Aliyun Docker source was not removed\n' >&2
         return 1
     fi
-    assert_log_contains 'apt-get update'
+    assert_log_contains 'apt-get -o DPkg::Lock::Timeout=300 update'
+}
+
+test_all_apt_operations_wait_for_dpkg_lock() {
+    new_fixture
+    trap cleanup_fixture RETURN
+
+    PATH="$FAKE_BIN:$PATH" COMMAND_LOG="$COMMAND_LOG" \
+        APT_SOURCES_LIST="$APT_SOURCES_LIST" APT_SOURCES_DIR="$APT_SOURCES_DIR" \
+        ID=ubuntu VERSION_CODENAME=noble bash "$SCRIPT" >/dev/null 2>&1
+
+    if grep '^apt-get ' "$COMMAND_LOG" | grep -Fqv 'apt-get -o DPkg::Lock::Timeout=300 '; then
+        printf 'Every apt-get operation must wait for the dpkg lock\n' >&2
+        cat "$COMMAND_LOG" >&2
+        return 1
+    fi
 }
 
 test_stops_when_apt_update_fails
 test_installs_from_official_repository_with_compose_plugin
 test_removes_legacy_aliyun_source_before_first_update
+test_all_apt_operations_wait_for_dpkg_lock
 printf 'docker_install tests passed\n'

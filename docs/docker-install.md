@@ -15,13 +15,14 @@ sudo bash docker/docker_install.sh
 脚本会：
 
 1. 清理旧脚本遗留的阿里云 Docker CE APT 源，不影响其他 Ubuntu 软件源。
-2. 在任何关键命令失败时立即退出，避免继续执行产生误导性错误。
-3. 移除 Docker 官方列出的冲突软件包。
-4. 通过 `/etc/apt/keyrings/docker.asc` 配置 Docker 官方签名密钥。
-5. 使用 `https://download.docker.com/linux/ubuntu` 官方 APT 仓库。
-6. 根据当前系统自动识别 Ubuntu 代号和 CPU 架构。
-7. 安装 Docker Engine、CLI、containerd、Buildx 和 Compose Plugin。
-8. 启用并启动 Docker 服务，随后验证 Engine 和 Compose。
+2. APT/dpkg 被后台升级占用时等待最多 300 秒，不删除系统锁文件。
+3. 在任何关键命令失败时立即退出，避免继续执行产生误导性错误。
+4. 移除 Docker 官方列出的冲突软件包。
+5. 通过 `/etc/apt/keyrings/docker.asc` 配置 Docker 官方签名密钥。
+6. 使用 `https://download.docker.com/linux/ubuntu` 官方 APT 仓库。
+7. 根据当前系统自动识别 Ubuntu 代号和 CPU 架构。
+8. 安装 Docker Engine、CLI、containerd、Buildx 和 Compose Plugin。
+9. 启用并启动 Docker 服务，随后验证 Engine 和 Compose。
 
 ## Compose 命令
 
@@ -58,3 +59,9 @@ sudo bash docker/docker_install.sh
 - Ubuntu 系统自身配置的软件源
 
 脚本不会在仓库更新失败后继续安装或启动 Docker。
+
+### dpkg 锁被占用
+
+Ubuntu 的 `unattended-upgrades` 可能暂时占用 `/var/lib/dpkg/lock-frontend`。
+脚本会自动等待最多 300 秒。不要手工删除锁文件；如果等待超时，请先检查
+后台升级进程是否仍在正常运行，再重新执行脚本。
