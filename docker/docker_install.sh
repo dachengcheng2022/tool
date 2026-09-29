@@ -24,6 +24,45 @@ if [[ "${ID:-}" != "ubuntu" || -z "${VERSION_CODENAME:-}" ]]; then
 fi
 
 export DEBIAN_FRONTEND=noninteractive
+APT_SOURCES_LIST=${APT_SOURCES_LIST:-/etc/apt/sources.list}
+APT_SOURCES_DIR=${APT_SOURCES_DIR:-/etc/apt/sources.list.d}
+
+remove_legacy_aliyun_docker_sources() {
+    local source_file
+    local backup_file
+    local aliyun_docker_source='mirrors.aliyun.com/docker-ce/linux/ubuntu'
+
+    if [[ -f "$APT_SOURCES_LIST" ]] && grep -Fq "$aliyun_docker_source" "$APT_SOURCES_LIST"; then
+        backup_file="${APT_SOURCES_LIST}.bak"
+        sed -i.bak "\|${aliyun_docker_source}|d" "$APT_SOURCES_LIST"
+        rm -f "$backup_file"
+    fi
+
+    if [[ ! -d "$APT_SOURCES_DIR" ]]; then
+        return
+    fi
+
+    while IFS= read -r -d '' source_file; do
+        if ! grep -Fq "$aliyun_docker_source" "$source_file"; then
+            continue
+        fi
+
+        case "$source_file" in
+            *.list)
+                backup_file="${source_file}.bak"
+                sed -i.bak "\|${aliyun_docker_source}|d" "$source_file"
+                rm -f "$backup_file"
+                ;;
+            *.sources)
+                rm -f "$source_file"
+                ;;
+        esac
+    done < <(find "$APT_SOURCES_DIR" -maxdepth 1 -type f \
+        \( -name '*.list' -o -name '*.sources' \) -print0)
+}
+
+printf '清理旧的阿里云 Docker APT 源...\n'
+remove_legacy_aliyun_docker_sources
 
 printf '更新系统软件索引...\n'
 apt-get update
@@ -43,7 +82,7 @@ chmod a+r /etc/apt/keyrings/docker.asc
 architecture=$(dpkg --print-architecture)
 printf '%s\n' \
     "deb [arch=${architecture} signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu ${VERSION_CODENAME} stable" \
-    | tee /etc/apt/sources.list.d/docker.list >/dev/null
+    | tee "$APT_SOURCES_DIR/docker.list" >/dev/null
 
 apt-get update
 

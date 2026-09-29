@@ -8,8 +8,12 @@ new_fixture() {
     FIXTURE_DIR=$(mktemp -d)
     FAKE_BIN="$FIXTURE_DIR/bin"
     COMMAND_LOG="$FIXTURE_DIR/commands.log"
+    APT_SOURCES_LIST="$FIXTURE_DIR/sources.list"
+    APT_SOURCES_DIR="$FIXTURE_DIR/sources.list.d"
     mkdir -p "$FAKE_BIN"
+    mkdir -p "$APT_SOURCES_DIR"
     : > "$COMMAND_LOG"
+    : > "$APT_SOURCES_LIST"
 
     for command in apt-get curl install chmod dpkg systemctl docker tee; do
         cat > "$FAKE_BIN/$command" <<'STUB'
@@ -65,7 +69,9 @@ STUB
     chmod +x "$FAKE_BIN/apt-get"
 
     set +e
-    PATH="$FAKE_BIN:$PATH" COMMAND_LOG="$COMMAND_LOG" ID=ubuntu VERSION_CODENAME=noble bash "$SCRIPT" >/dev/null 2>&1
+    PATH="$FAKE_BIN:$PATH" COMMAND_LOG="$COMMAND_LOG" \
+        APT_SOURCES_LIST="$APT_SOURCES_LIST" APT_SOURCES_DIR="$APT_SOURCES_DIR" \
+        ID=ubuntu VERSION_CODENAME=noble bash "$SCRIPT" >/dev/null 2>&1
     local status=$?
     set -e
 
@@ -83,7 +89,9 @@ test_installs_from_official_repository_with_compose_plugin() {
     new_fixture
     trap cleanup_fixture RETURN
 
-    PATH="$FAKE_BIN:$PATH" COMMAND_LOG="$COMMAND_LOG" ID=ubuntu VERSION_CODENAME=noble bash "$SCRIPT" >/dev/null 2>&1
+    PATH="$FAKE_BIN:$PATH" COMMAND_LOG="$COMMAND_LOG" \
+        APT_SOURCES_LIST="$APT_SOURCES_LIST" APT_SOURCES_DIR="$APT_SOURCES_DIR" \
+        ID=ubuntu VERSION_CODENAME=noble bash "$SCRIPT" >/dev/null 2>&1
 
     assert_log_contains 'curl -fsSL https://download.docker.com/linux/ubuntu/gpg'
     assert_log_contains 'apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin'
@@ -91,6 +99,42 @@ test_installs_from_official_repository_with_compose_plugin() {
     assert_log_contains 'docker compose version'
 }
 
+test_removes_legacy_aliyun_source_before_first_update() {
+    new_fixture
+    trap cleanup_fixture RETURN
+
+    printf '%s\n' \
+        'deb http://archive.ubuntu.com/ubuntu noble main' \
+        'deb [arch=amd64] http://mirrors.aliyun.com/docker-ce/linux/ubuntu noble stable' \
+        > "$APT_SOURCES_LIST"
+    printf '%s\n' \
+        'deb [arch=amd64] http://mirrors.aliyun.com/docker-ce/linux/ubuntu noble stable' \
+        > "$APT_SOURCES_DIR/docker-ce.list"
+
+    cat > "$FAKE_BIN/apt-get" <<'STUB'
+#!/usr/bin/env bash
+printf 'apt-get %s\n' "$*" >> "$COMMAND_LOG"
+if [[ "${1:-}" == "update" ]] && grep -RqsF 'mirrors.aliyun.com/docker-ce/linux/ubuntu' \
+    "$APT_SOURCES_LIST" "$APT_SOURCES_DIR"; then
+    exit 73
+fi
+exit 0
+STUB
+    chmod +x "$FAKE_BIN/apt-get"
+
+    PATH="$FAKE_BIN:$PATH" COMMAND_LOG="$COMMAND_LOG" \
+        APT_SOURCES_LIST="$APT_SOURCES_LIST" APT_SOURCES_DIR="$APT_SOURCES_DIR" \
+        ID=ubuntu VERSION_CODENAME=noble bash "$SCRIPT" >/dev/null 2>&1
+
+    if grep -RqsF 'mirrors.aliyun.com/docker-ce/linux/ubuntu' \
+        "$APT_SOURCES_LIST" "$APT_SOURCES_DIR"; then
+        printf 'Legacy Aliyun Docker source was not removed\n' >&2
+        return 1
+    fi
+    assert_log_contains 'apt-get update'
+}
+
 test_stops_when_apt_update_fails
 test_installs_from_official_repository_with_compose_plugin
+test_removes_legacy_aliyun_source_before_first_update
 printf 'docker_install tests passed\n'
