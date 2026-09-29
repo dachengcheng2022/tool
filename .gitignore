@@ -1,0 +1,11 @@
+.idea
+logs
+*.iml
+/target/
+.settings
+.classpath
+.project
+target/
+
+*.jar
+dependency.log
