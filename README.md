@@ -15,3 +15,14 @@ Compose Plugin。执行时会先清理旧脚本遗留的阿里云 Docker CE 仓�
 `docker-compose` 命令。
 
 支持范围、执行行为和故障排查参见 [Docker 安装说明](docs/docker-install.md)。
+
+## SSH 公钥登录
+
+```bash
+sudo bash docker/ssh_login.sh
+```
+
+交互输入完整的单行 SSH 公钥，始终写入 `/root/.ssh/authorized_keys`。
+脚本关闭密码和键盘交互认证，开启公钥认证，校验配置后执行
+`systemctl reload ssh`。使用前确保持有对应私钥；执行后保留当前连接，
+新开终端验证 root 公钥登录。详见 [SSH 公钥登录说明](docs/ssh-login.md)。
