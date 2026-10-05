@@ -9,6 +9,15 @@
 sudo bash docker/ssh_login.sh
 ```
 
+也支持在交互终端中通过管道执行（远程分支须先更新为本次修复版本）：
+
+```bash
+wget -qO- https://raw.githubusercontent.com/dachengcheng2022/tool/refs/heads/test/docker/ssh_login.sh | sudo bash
+```
+
+公钥从 `/dev/tty` 读取，避免与管道传入的脚本共用标准输入。
+没有控制终端时会明确报错退出；通过 SSH 远程执行请分配终端（`ssh -t`）。
+
 提示出现后，粘贴客户端 `.pub` 文件中的完整单行公钥，然后按回车。
 不要输入私钥。无论调用 sudo 的用户是谁，目标始终为
 `/root/.ssh/authorized_keys`。
@@ -59,4 +68,5 @@ python3 tests/ssh_login_test.py
 
 行为测试在临时目录中使用真实公钥校验，替代 root 身份、文件所有权设置、
 sshd 和 systemd 边界；覆盖重复执行、无效公钥、配置校验失败、重载失败和
-已有文件缺少末尾换行。实际 sshd 解析与远程登录仍须在目标服务器验证。
+已有文件缺少末尾换行、管道执行交互、空公钥和无控制终端。当前沙箱禁止打开 `/dev/tty`，终端测试用继承的真实伪终端文件描述符替代该打开操作。
+实际 `/dev/tty` 交互、sshd 解析与远程登录仍须在目标服务器验证。

@@ -22,6 +22,15 @@ Compose Plugin。执行时会先清理旧脚本遗留的阿里云 Docker CE 仓�
 sudo bash docker/ssh_login.sh
 ```
 
+也支持在交互终端中通过管道执行（远程分支须先更新为本次修复版本）：
+
+```bash
+wget -qO- https://raw.githubusercontent.com/dachengcheng2022/tool/refs/heads/test/docker/ssh_login.sh | sudo bash
+```
+
+公钥从 `/dev/tty` 读取，避免与管道传入的脚本共用标准输入。
+没有控制终端时会明确报错退出；通过 SSH 远程执行请分配终端（`ssh -t`）。
+
 交互输入完整的单行 SSH 公钥，始终写入 `/root/.ssh/authorized_keys`。
 脚本关闭密码和键盘交互认证，开启公钥认证，校验配置后执行
 `systemctl reload ssh`。使用前确保持有对应私钥；执行后保留当前连接，

@@ -36,8 +36,15 @@ cleanup() {
 }
 trap cleanup EXIT
 
-printf '请输入 root 登录使用的完整 SSH 公钥（单行）：\n'
-IFS= read -r public_key || fail '未读取到公钥。'
+# stdin 可能是 wget/curl 传来的脚本，交互输入必须使用控制终端。
+if ! { exec 3<> /dev/tty; } 2>/dev/null; then
+    fail '无法打开交互终端，请在终端中执行；远程执行时请使用 ssh -t。'
+fi
+printf '请输入 root 登录使用的完整 SSH 公钥（单行）：\n' >&3
+IFS= read -r public_key <&3 || fail '未读取到公钥。'
+exec 3>&-
+key_type=''
+key_data=''
 read -r key_type key_data _ <<< "$public_key"
 [[ "$key_type" =~ ^(ssh-|ecdsa-|sk-) && -n "$key_data" ]] || fail '请输入完整的 OpenSSH 公钥，不能输入私钥。'
 printf '%s\n' "$public_key" > "$work_dir/public_key"
