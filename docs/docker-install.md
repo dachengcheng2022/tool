@@ -23,6 +23,7 @@ sudo bash docker/docker_install.sh
 7. 根据当前系统自动识别 Ubuntu 代号和 CPU 架构。
 8. 安装 Docker Engine、CLI、containerd、Buildx 和 Compose Plugin。
 9. 启用并启动 Docker 服务，随后验证 Engine 和 Compose。
+10. 安装仓库依赖时同时安装 `tzdata`，通过 `timedatectl set-timezone Asia/Shanghai` 将宿主机时区设置为北京时间（UTC+8）。容器内部时区需单独配置。
 
 ## Compose 命令
 

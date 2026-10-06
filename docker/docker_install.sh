@@ -72,7 +72,10 @@ printf '移除可能冲突的软件包...\n'
 "${APT_GET[@]}" remove -y docker.io docker-compose docker-compose-v2 podman-docker containerd runc
 
 printf '安装仓库依赖...\n'
-"${APT_GET[@]}" install -y ca-certificates curl
+"${APT_GET[@]}" install -y ca-certificates curl tzdata
+
+printf '设置系统时区为北京时间（Asia/Shanghai）...\n'
+timedatectl set-timezone Asia/Shanghai
 
 printf '配置 Docker 官方 APT 仓库...\n'
 install -m 0755 -d /etc/apt/keyrings

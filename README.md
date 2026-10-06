@@ -9,7 +9,7 @@ sudo bash docker/docker_install.sh
 ```
 
 脚本使用 Docker 官方 HTTPS APT 仓库，安装 Docker Engine、Buildx 和
-Compose Plugin。执行时会先清理旧脚本遗留的阿里云 Docker CE 仓库配置，
+Compose Plugin，并安装 `tzdata`、将宿主机时区设置为北京时间（`Asia/Shanghai`，UTC+8）。执行时会先清理旧脚本遗留的阿里云 Docker CE 仓库配置，
 避免镜像同步错误阻断首次 `apt-get update`。APT 被系统后台升级占用时，
 脚本会等待最多 5 分钟。安装后请使用 `docker compose`，不要再使用旧版
 `docker-compose` 命令。

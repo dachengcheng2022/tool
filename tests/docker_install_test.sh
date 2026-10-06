@@ -15,7 +15,7 @@ new_fixture() {
     : > "$COMMAND_LOG"
     : > "$APT_SOURCES_LIST"
 
-    for command in apt-get curl install chmod dpkg systemctl docker tee; do
+    for command in apt-get curl install chmod dpkg systemctl timedatectl docker tee; do
         cat > "$FAKE_BIN/$command" <<'STUB'
 #!/usr/bin/env bash
 printf '%s %s\n' "$(basename "$0")" "$*" >> "$COMMAND_LOG"
@@ -96,6 +96,8 @@ test_installs_from_official_repository_with_compose_plugin() {
     assert_log_contains 'curl -fsSL https://download.docker.com/linux/ubuntu/gpg'
     assert_log_contains 'apt-get -o DPkg::Lock::Timeout=300 install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin'
     assert_log_contains 'systemctl enable --now docker'
+    assert_log_contains 'apt-get -o DPkg::Lock::Timeout=300 install -y ca-certificates curl tzdata'
+    assert_log_contains 'timedatectl set-timezone Asia/Shanghai'
     assert_log_contains 'docker compose version'
 }
 
